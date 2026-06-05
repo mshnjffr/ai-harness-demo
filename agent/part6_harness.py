@@ -15,10 +15,11 @@ from dataclasses import dataclass
 from typing import Callable, Optional
 
 from .browser import BrowserSession
-from .part1_tools import create_tools
+from .part1_tools import ToolHooks, create_tools
 from .part3_context import create_context
-from .part4_guardrails import default_guardrails
+from .part4_guardrails import combine_guardrails, default_guardrails, stop_after_upvote
 from .part5_loop import LoopResult, run_loop
+from .login_handler import create_login_handler
 
 
 @dataclass
@@ -88,12 +89,33 @@ def run_harness(task: str, model: str, options: Optional[HarnessOptions] = None)
 
 def run_harness_attempt(task: str, model: str) -> HarnessExecutionResult:
     session = BrowserSession()
+    state = {"upvoted_story": None, "stories": []}
     session.open()
 
     try:
-        tools = create_tools(session)
+        def on_upvote_success(story_id: str) -> None:
+            story = next((s for s in state["stories"] if s.get("id") == story_id), None)
+            state["upvoted_story"] = (
+                {"id": story_id, "title": story["title"], "rank": story["rank"]}
+                if story
+                else {"id": story_id}
+            )
+            print(f"\n[harness] Upvote successful for story ID {story_id} - forcing completion\n")
+
+        def on_stories_loaded(stories: list) -> None:
+            state["stories"] = stories
+
+        tools = create_tools(
+            session,
+            ToolHooks(on_upvote_success=on_upvote_success, on_stories_loaded=on_stories_loaded),
+        )
+        guardrails = combine_guardrails(
+            stop_after_upvote(lambda: state["upvoted_story"]),
+            default_guardrails,
+        )
         messages = create_context(task)
-        result = run_loop(model, messages, default_guardrails, tools)
+        login_handler = create_login_handler(session)
+        result = run_loop(model, messages, guardrails, tools, login_handler)
         return HarnessExecutionResult(task=task, model=model, result=result)
     finally:
         session.close()

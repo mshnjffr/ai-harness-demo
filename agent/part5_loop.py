@@ -10,7 +10,7 @@ and runs the guardrail (so a confused model cannot loop forever).
 import json
 import sys
 from dataclasses import dataclass, field
-from typing import Literal
+from typing import Callable, Literal, Optional
 
 from .part1_tools import ToolRegistry
 from .part2_model import client
@@ -44,7 +44,17 @@ class LoopResult:
     stopped_by: Literal["model", "guardrail", "success"]
 
 
-def run_loop(model: str, messages: list, guardrail: GuardrailFn, tools: ToolRegistry) -> LoopResult:
+# Returns a ToolEvent if the harness handled something (e.g. login), else None.
+LoginHandler = Callable[[], Optional[ToolEvent]]
+
+
+def run_loop(
+    model: str,
+    messages: list,
+    guardrail: GuardrailFn,
+    tools: ToolRegistry,
+    login_handler: Optional[LoginHandler] = None,
+) -> LoopResult:
     trace: list = []
 
     while True:
@@ -56,11 +66,12 @@ def run_loop(model: str, messages: list, guardrail: GuardrailFn, tools: ToolRegi
 
         check = guardrail(GuardrailInput(iterations=len(trace), messages=messages))
         if not check.ok:
+            stopped_by = "success" if check.reason.startswith("Successfully") else "guardrail"
             return LoopResult(
                 answer=check.reason,
                 iterations=len(trace),
                 trace=trace,
-                stopped_by="guardrail",
+                stopped_by=stopped_by,
             )
 
         sys.stdout.write(f"[iter {iteration_index}] calling model... ")
@@ -113,6 +124,20 @@ def run_loop(model: str, messages: list, guardrail: GuardrailFn, tools: ToolRegi
 
                 tool_events.append(ToolEvent(tool=name, args=args, result=result))
                 messages.append({"role": "tool", "tool_call_id": call.id, "content": result})
+
+            if login_handler is not None:
+                login_event = login_handler()
+                if login_event is not None:
+                    tool_events.append(login_event)
+                    messages.append(
+                        {
+                            "role": "user",
+                            "content": (
+                                "Authentication completed by harness. You are now logged in. "
+                                "Navigate back to https://news.ycombinator.com and complete your upvote task."
+                            ),
+                        }
+                    )
 
             trace.append(
                 LoopIteration(

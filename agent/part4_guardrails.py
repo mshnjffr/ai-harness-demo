@@ -53,6 +53,25 @@ def max_messages(limit: int) -> GuardrailFn:
     return check
 
 
+def stop_after_upvote(get_upvoted_story: Callable[[], dict]) -> GuardrailFn:
+    """A *success* guardrail: stops the loop the moment the upvote lands, so the
+    model cannot wander off after finishing the task. Its reason starts with
+    "Successfully" so the loop can mark stopped_by="success" rather than failure.
+    """
+
+    def check(_state: GuardrailInput) -> GuardrailResult:
+        story = get_upvoted_story()
+        if story:
+            if story.get("title") and story.get("rank"):
+                story_info = f"\"{story['title']}\" (rank {story['rank']})"
+            else:
+                story_info = f"story ID {story['id']}"
+            return GuardrailResult.stop(f"Successfully upvoted {story_info}")
+        return GuardrailResult.proceed()
+
+    return check
+
+
 def combine_guardrails(*fns: GuardrailFn) -> GuardrailFn:
     def check(state: GuardrailInput) -> GuardrailResult:
         for fn in fns:
