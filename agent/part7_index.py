@@ -17,9 +17,10 @@ TASK = """
 Upvote a story on Hacker News.
 
 Go to https://news.ycombinator.com.
-Call browser_get_stories to see ranked stories with their IDs and voted status.
+Call browser_get_stories to see ranked stories with their IDs, titles, and voted status.
 Find the highest-ranked story where alreadyVoted is false.
 Click its upvote arrow using the exact selector: a[id="up_STORYID"] (replace STORYID with the actual id).
+When you are done, report which story you upvoted by both its title and its ID.
 """.strip()
 
 
