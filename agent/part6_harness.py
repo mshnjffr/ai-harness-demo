@@ -114,7 +114,7 @@ def run_harness_attempt(task: str, model: str) -> HarnessExecutionResult:
             default_guardrails,
         )
         messages = create_context(task)
-        login_handler = create_login_handler(session)
+        login_handler = create_login_handler(session, on_upvote_recovered=on_upvote_success)
         result = run_loop(model, messages, guardrails, tools, login_handler)
         return HarnessExecutionResult(task=task, model=model, result=result)
     finally:
@@ -149,17 +149,42 @@ def verify_successful_upvote(execution: HarnessExecutionResult) -> VerifyResult:
                 reason=f"Upvote click confirmed - landed on {_url_after_now_at(event.result)}",
             )
 
+    # The harness can finish the upvote itself during login recovery; that lands
+    # on the front page too, just not via a model-issued browser_click.
+    for event in events:
+        if (
+            event.tool == "harness_auto_login"
+            and "completed your upvote" in event.result
+            and re.search(r"news\.ycombinator\.com/(news)?$", _url_after_now_at(event.result))
+        ):
+            return VerifyResult(
+                passed=True,
+                reason=f"Upvote completed by harness during login recovery - landed on {_url_after_now_at(event.result)}",
+            )
+
     for event in events:
         if event.tool == "harness_auto_login" and event.result.startswith(
             "Harness failed to handle login at "
         ):
             return VerifyResult(passed=False, reason=event.result, fatal=True)
 
+    # Only flag a login/vote redirect as fatal if the harness did NOT recover it.
+    # The redirect that triggered a successful auto-login is expected, not a wall.
+    recovered_urls = {
+        _extract_url(event.result)
+        for event in events
+        if event.tool == "harness_auto_login"
+        and not event.result.startswith("Harness failed to handle login at ")
+    }
+
     for event in events:
-        if event.tool != "harness_auto_login" and _is_login_url(_extract_url(event.result)):
+        if event.tool == "harness_auto_login":
+            continue
+        url = _extract_url(event.result)
+        if _is_login_url(url) and url not in recovered_urls:
             return VerifyResult(
                 passed=False,
-                reason=f"Hit login screen instead of completing the upvote ({_extract_url(event.result)})",
+                reason=f"Hit login screen instead of completing the upvote ({url})",
                 fatal=True,
             )
 
