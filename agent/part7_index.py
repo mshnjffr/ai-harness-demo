@@ -1,9 +1,9 @@
-"""Entry point (branch 2): the harness owns everything now.
+"""Entry point (`harness-owns-environment` branch): the harness owns everything now.
 
     python -m agent.part7_index
 
-Compare this to branch 0/1, where this file opened and closed the browser by
-hand. That responsibility now lives inside run_harness().
+Compare this to the earlier branches, where this file opened and closed the
+browser by hand. That responsibility now lives inside run_harness().
 """
 
 from .part2_model import MODEL
