@@ -1,7 +1,8 @@
 """Context / state.
 
-For now this just builds the initial message list for a task. Branch 1 adds
-trimming to keep the context from growing without bound (context rot).
+For now this just builds the initial message list for a task. The
+`context-and-guardrails` branch adds trimming to keep the context from growing
+without bound (context rot).
 """
 
 SYSTEM_PROMPT = (
