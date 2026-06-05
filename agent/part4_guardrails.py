@@ -3,7 +3,7 @@
 A guardrail takes the current loop state and returns GuardrailResult.ok() to
 continue or GuardrailResult.stop(reason) to halt. They catch *structural*
 failures (looping forever, context blowing up) -- not wrong answers. (Catching
-wrong answers is the verify step, added in branch 3.)
+wrong answers is the verify step, added in the `verify-and-retry` branch.)
 """
 
 from dataclasses import dataclass

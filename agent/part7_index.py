@@ -1,9 +1,10 @@
-"""Entry point (branch 0): wire the pieces together by hand.
+"""Entry point (main branch): wire the pieces together by hand.
 
     python -m agent.part7_index
 
-Notice this file opens and closes the browser itself. Branch 2 moves that
-responsibility into the harness, where it belongs.
+Notice this file opens and closes the browser itself. The
+`harness-owns-environment` branch moves that responsibility into the harness,
+where it belongs.
 """
 
 from .browser import BrowserSession
