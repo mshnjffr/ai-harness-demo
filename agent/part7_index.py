@@ -1,17 +1,13 @@
-"""Entry point (branch 0): wire the pieces together by hand.
+"""Entry point (branch 2): the harness owns everything now.
 
     python -m agent.part7_index
 
-Notice this file opens and closes the browser itself. Branch 2 moves that
-responsibility into the harness, where it belongs.
+Compare this to branch 0/1, where this file opened and closed the browser by
+hand. That responsibility now lives inside run_harness().
 """
 
-from .browser import BrowserSession
-from .part1_tools import create_tools
 from .part2_model import MODEL
-from .part3_context import create_context
-from .part4_guardrails import default_guardrails
-from .part5_loop import run_loop
+from .part6_harness import print_harness_result, run_harness
 
 TASK = """
 Upvote a story on Hacker News.
@@ -27,19 +23,8 @@ def main() -> None:
     print(f"Model: {MODEL}")
     print("Task:  upvote on Hacker News\n")
 
-    session = BrowserSession()
-    try:
-        session.open()
-
-        tools = create_tools(session)
-        messages = create_context(TASK)
-        result = run_loop(MODEL, messages, default_guardrails, tools)
-
-        print(f"\nAnswer: {result.answer}")
-        print(f"Stopped by: {result.stopped_by}")
-        print(f"Iterations: {result.iterations}")
-    finally:
-        session.close()
+    result = run_harness(TASK, MODEL)
+    print_harness_result(result)
 
 
 if __name__ == "__main__":
