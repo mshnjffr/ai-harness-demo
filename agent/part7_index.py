@@ -10,6 +10,7 @@ from .browser import BrowserSession
 from .part1_tools import create_tools
 from .part2_model import MODEL
 from .part3_context import create_context
+from .part4_guardrails import default_guardrails
 from .part5_loop import run_loop
 
 TASK = """
@@ -32,7 +33,7 @@ def main() -> None:
 
         tools = create_tools(session)
         messages = create_context(TASK)
-        result = run_loop(MODEL, messages, tools)
+        result = run_loop(MODEL, messages, default_guardrails, tools)
 
         print(f"\nAnswer: {result.answer}")
         print(f"Stopped by: {result.stopped_by}")

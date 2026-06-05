@@ -1,10 +1,10 @@
 """The agent loop.
 
 Call model -> if it asked for tools, run them and feed results back -> repeat,
-until the model gives a final answer.
+until the model gives a final answer or a guardrail fires.
 
-Branch 0 has no safety: nothing stops a confused model from looping forever.
-That is the point -- branch 1 adds context trimming and guardrails.
+Before each model call the loop trims the context (so it cannot grow forever)
+and runs the guardrail (so a confused model cannot loop forever).
 """
 
 import json
@@ -14,6 +14,10 @@ from typing import Literal
 
 from .part1_tools import ToolRegistry
 from .part2_model import client
+from .part3_context import trim_context
+from .part4_guardrails import GuardrailFn, GuardrailInput
+
+MAX_CONTEXT_MESSAGES = 20
 
 
 @dataclass
@@ -29,6 +33,7 @@ class LoopIteration:
     outcome: Literal["tool_calls", "answer"]
     tool_events: list = field(default_factory=list)
     context_size: int = 0
+    context_trimmed: bool = False
 
 
 @dataclass
@@ -39,11 +44,24 @@ class LoopResult:
     stopped_by: Literal["model", "guardrail", "success"]
 
 
-def run_loop(model: str, messages: list, tools: ToolRegistry) -> LoopResult:
+def run_loop(model: str, messages: list, guardrail: GuardrailFn, tools: ToolRegistry) -> LoopResult:
     trace: list = []
 
     while True:
         iteration_index = len(trace) + 1
+
+        before_trim = len(messages)
+        messages = trim_context(messages, MAX_CONTEXT_MESSAGES)
+        context_trimmed = len(messages) < before_trim
+
+        check = guardrail(GuardrailInput(iterations=len(trace), messages=messages))
+        if not check.ok:
+            return LoopResult(
+                answer=check.reason,
+                iterations=len(trace),
+                trace=trace,
+                stopped_by="guardrail",
+            )
 
         sys.stdout.write(f"[iter {iteration_index}] calling model... ")
         sys.stdout.flush()
@@ -66,6 +84,7 @@ def run_loop(model: str, messages: list, tools: ToolRegistry) -> LoopResult:
                     outcome="answer",
                     tool_events=[],
                     context_size=context_size,
+                    context_trimmed=context_trimmed,
                 )
             )
             return LoopResult(
@@ -101,5 +120,6 @@ def run_loop(model: str, messages: list, tools: ToolRegistry) -> LoopResult:
                     outcome="tool_calls",
                     tool_events=tool_events,
                     context_size=context_size,
+                    context_trimmed=context_trimmed,
                 )
             )
