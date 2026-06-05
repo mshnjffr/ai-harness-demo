@@ -12,6 +12,9 @@ what that capability looks like in isolation. The progression is:
 main  ->  context-and-guardrails  ->  harness-owns-environment  ->  verify-and-retry  ->  login-recovery
 ```
 
+See [ARCHITECTURE.md](ARCHITECTURE.md) for mermaid diagrams of the harness, the
+loop, and the verify/retry flow.
+
 ---
 
 ## What is an AI harness?
