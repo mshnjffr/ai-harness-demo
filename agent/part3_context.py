@@ -1,7 +1,7 @@
 """Context / state.
 
 For now this just builds the initial message list for a task. The
-`context-and-guardrails` branch adds trimming to keep the context from growing
+`1-context-and-guardrails` branch adds trimming to keep the context from growing
 without bound (context rot).
 """
 

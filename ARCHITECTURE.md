@@ -10,10 +10,10 @@ next to see that capability in isolation.
 
 ```mermaid
 flowchart LR
-  main["main: bare loop"] --> cg["context-and-guardrails: trim + guardrails"]
-  cg --> hoe["harness-owns-environment: run_harness()"]
-  hoe --> vr["verify-and-retry: verify + retry"]
-  vr --> lr["login-recovery: auto-login + success guardrail"]
+  main["main: bare loop"] --> cg["1-context-and-guardrails: trim + guardrails"]
+  cg --> hoe["2-harness-owns-environment: run_harness()"]
+  hoe --> vr["3-verify-and-retry: verify + retry"]
+  vr --> lr["4-login-recovery: auto-login + success guardrail"]
 ```
 
 ## The harness owns the environment

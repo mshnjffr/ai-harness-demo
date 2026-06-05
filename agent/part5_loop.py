@@ -4,7 +4,7 @@ Call model -> if it asked for tools, run them and feed results back -> repeat,
 until the model gives a final answer.
 
 This branch has no safety: nothing stops a confused model from looping forever.
-That is the point -- the `context-and-guardrails` branch adds them.
+That is the point -- the `1-context-and-guardrails` branch adds them.
 """
 
 import json

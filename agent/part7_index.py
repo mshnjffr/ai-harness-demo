@@ -3,7 +3,7 @@
     python -m agent.part7_index
 
 Notice this file opens and closes the browser itself. The
-`harness-owns-environment` branch moves that responsibility into the harness,
+`2-harness-owns-environment` branch moves that responsibility into the harness,
 where it belongs.
 """
 

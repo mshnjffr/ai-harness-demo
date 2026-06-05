@@ -9,7 +9,7 @@ capability. Read the code on a branch, then `git diff` to the next branch to see
 what that capability looks like in isolation. The progression is:
 
 ```
-main  ->  context-and-guardrails  ->  harness-owns-environment  ->  verify-and-retry  ->  login-recovery
+main  ->  1-context-and-guardrails  ->  2-harness-owns-environment  ->  3-verify-and-retry  ->  4-login-recovery
 ```
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for mermaid diagrams of the harness, the
@@ -88,7 +88,7 @@ task -> [tools + context + guardrails + loop + verify + recovery] -> result
 | `part6_harness.py` | The harness | Owns the lifecycle: opens the environment, runs the loop, verifies the result, retries, closes the environment. |
 | `part7_index.py` | Entry point | Wires a task + model into the harness. |
 | `browser.py` | Environment | A `BrowserSession` (Playwright) -- one isolated page per run, owned by the harness. |
-| `login_handler.py` | Recovery | Detects a login redirect and handles auth itself (`login-recovery` branch). |
+| `login_handler.py` | Recovery | Detects a login redirect and handles auth itself (`4-login-recovery` branch). |
 
 ### The task
 
@@ -108,20 +108,20 @@ Each branch builds on the previous one. Check one out, read it, then diff forwar
 | Branch | Adds | Key idea |
 |---|---|---|
 | **`main`** | Bare loop: tools, model, context, loop, browser. Guardrails and harness are empty placeholders; `part7_index.py` wires things by hand. | A loop with tools is *not yet* a harness. With no guardrails it can spin forever. |
-| **`context-and-guardrails`** | Context trimming + composable guardrails (`max_iterations`, `max_messages`), checked before every iteration. | Context engineering + architectural constraints. |
-| **`harness-owns-environment`** | `run_harness()` / `print_harness_result()`. The harness opens and (always) closes the browser; `part7_index.py` collapses to one call. | **The harness owns the environment.** |
-| **`verify-and-retry`** | `verify_successful_upvote` + a retry loop (`max_attempts`). | Guardrails catch *structural* failures; verify catches *wrong answers*. You need both. |
-| **`login-recovery`** | `login_handler.py` auto-handles the login redirect; `stop_after_upvote` success guardrail; loop gains a login hook. | Harness engineering: move the missing capability out of the model and into the environment. |
+| **`1-context-and-guardrails`** | Context trimming + composable guardrails (`max_iterations`, `max_messages`), checked before every iteration. | Context engineering + architectural constraints. |
+| **`2-harness-owns-environment`** | `run_harness()` / `print_harness_result()`. The harness opens and (always) closes the browser; `part7_index.py` collapses to one call. | **The harness owns the environment.** |
+| **`3-verify-and-retry`** | `verify_successful_upvote` + a retry loop (`max_attempts`). | Guardrails catch *structural* failures; verify catches *wrong answers*. You need both. |
+| **`4-login-recovery`** | `login_handler.py` auto-handles the login redirect; `stop_after_upvote` success guardrail; loop gains a login hook. | Harness engineering: move the missing capability out of the model and into the environment. |
 
 ```sh
 git checkout main
-git diff main context-and-guardrails               # context-trimming + guardrails
-git diff context-and-guardrails harness-owns-environment  # the harness owns the environment
-git diff harness-owns-environment verify-and-retry        # verify + retry
-git diff verify-and-retry login-recovery                  # harness-managed recovery
+git diff main 1-context-and-guardrails                       # context-trimming + guardrails
+git diff 1-context-and-guardrails 2-harness-owns-environment  # the harness owns the environment
+git diff 2-harness-owns-environment 3-verify-and-retry        # verify + retry
+git diff 3-verify-and-retry 4-login-recovery                  # harness-managed recovery
 ```
 
-### The harness owns the environment (`harness-owns-environment` onward)
+### The harness owns the environment (`2-harness-owns-environment` onward)
 
 ```
 run_harness()
@@ -160,7 +160,7 @@ MODEL = "openai/gpt-oss-120b:free"
 Swapping in a weaker model is a one-line change -- a good way to watch the
 guardrails, verify step, and retry loop actually do their job.
 
-The `login-recovery` branch needs a **throwaway** Hacker News account in `.env`
+The `4-login-recovery` branch needs a **throwaway** Hacker News account in `.env`
 (`HN_USERNAME` / `HN_PASSWORD`). Every earlier branch runs fully without it.
 
 ---
