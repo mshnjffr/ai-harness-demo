@@ -4,9 +4,13 @@ A minimal **Python** implementation of an **agent harness**, built to teach the
 team what a harness actually is and how one is put together, running on
 **OpenRouter**.
 
-You learn it **branch by branch**: each git branch (`0` -> `4`) adds exactly one
-harness capability. Read the code on a branch, then `git diff` to the next branch
-to see what that capability looks like in isolation.
+You learn it **branch by branch**: each branch adds exactly one harness
+capability. Read the code on a branch, then `git diff` to the next branch to see
+what that capability looks like in isolation. The progression is:
+
+```
+main  ->  context-and-guardrails  ->  harness-owns-environment  ->  verify-and-retry  ->  login-recovery
+```
 
 ---
 
@@ -81,7 +85,7 @@ task -> [tools + context + guardrails + loop + verify + recovery] -> result
 | `part6_harness.py` | The harness | Owns the lifecycle: opens the environment, runs the loop, verifies the result, retries, closes the environment. |
 | `part7_index.py` | Entry point | Wires a task + model into the harness. |
 | `browser.py` | Environment | A `BrowserSession` (Playwright) -- one isolated page per run, owned by the harness. |
-| `login_handler.py` | Recovery | Detects a login redirect and handles auth itself (branch 4). |
+| `login_handler.py` | Recovery | Detects a login redirect and handles auth itself (`login-recovery` branch). |
 
 ### The task
 
@@ -100,21 +104,21 @@ Each branch builds on the previous one. Check one out, read it, then diff forwar
 
 | Branch | Adds | Key idea |
 |---|---|---|
-| **`0`** | Bare loop: tools, model, context, loop, browser. Guardrails and harness are empty placeholders; `part7_index.py` wires things by hand. | A loop with tools is *not yet* a harness. With no guardrails it can spin forever. |
-| **`1`** | Context trimming + composable guardrails (`max_iterations`, `max_messages`), checked before every iteration. | Context engineering + architectural constraints. |
-| **`2`** | `run_harness()` / `print_harness_result()`. The harness opens and (always) closes the browser; `part7_index.py` collapses to one call. | **The harness owns the environment.** |
-| **`3`** | `verify_successful_upvote` + a retry loop (`max_attempts`). | Guardrails catch *structural* failures; verify catches *wrong answers*. You need both. |
-| **`4`** | `login_handler.py` auto-handles the login redirect; `stop_after_upvote` success guardrail; loop gains a login hook. | Harness engineering: move the missing capability out of the model and into the environment. |
+| **`main`** | Bare loop: tools, model, context, loop, browser. Guardrails and harness are empty placeholders; `part7_index.py` wires things by hand. | A loop with tools is *not yet* a harness. With no guardrails it can spin forever. |
+| **`context-and-guardrails`** | Context trimming + composable guardrails (`max_iterations`, `max_messages`), checked before every iteration. | Context engineering + architectural constraints. |
+| **`harness-owns-environment`** | `run_harness()` / `print_harness_result()`. The harness opens and (always) closes the browser; `part7_index.py` collapses to one call. | **The harness owns the environment.** |
+| **`verify-and-retry`** | `verify_successful_upvote` + a retry loop (`max_attempts`). | Guardrails catch *structural* failures; verify catches *wrong answers*. You need both. |
+| **`login-recovery`** | `login_handler.py` auto-handles the login redirect; `stop_after_upvote` success guardrail; loop gains a login hook. | Harness engineering: move the missing capability out of the model and into the environment. |
 
 ```sh
-git checkout 0
-git diff 0 1      # what context-trimming + guardrails look like
-git diff 1 2      # what "the harness owns the environment" looks like
-git diff 2 3      # what verify + retry look like
-git diff 3 4      # what harness-managed recovery looks like
+git checkout main
+git diff main context-and-guardrails               # context-trimming + guardrails
+git diff context-and-guardrails harness-owns-environment  # the harness owns the environment
+git diff harness-owns-environment verify-and-retry        # verify + retry
+git diff verify-and-retry login-recovery                  # harness-managed recovery
 ```
 
-### The harness owns the environment (branch 2+)
+### The harness owns the environment (`harness-owns-environment` onward)
 
 ```
 run_harness()
@@ -153,8 +157,8 @@ MODEL = "openai/gpt-oss-120b:free"
 Swapping in a weaker model is a one-line change -- a good way to watch the
 guardrails, verify step, and retry loop actually do their job.
 
-Branch 4's login recovery needs a **throwaway** Hacker News account in `.env`
-(`HN_USERNAME` / `HN_PASSWORD`). Branches 0-3 run fully without it.
+The `login-recovery` branch needs a **throwaway** Hacker News account in `.env`
+(`HN_USERNAME` / `HN_PASSWORD`). Every earlier branch runs fully without it.
 
 ---
 
