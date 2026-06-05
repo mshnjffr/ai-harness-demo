@@ -1,13 +1,13 @@
-"""Entry point (branch 2): the harness owns everything now.
+"""Entry point (branch 3): hand the harness a verify step and an attempt budget.
 
     python -m agent.part7_index
 
-Compare this to branch 0/1, where this file opened and closed the browser by
-hand. That responsibility now lives inside run_harness().
+The harness runs the task, verifies the upvote actually happened, and retries
+up to max_attempts if it did not (unless the failure is fatal).
 """
 
 from .part2_model import MODEL
-from .part6_harness import print_harness_result, run_harness
+from .part6_harness import HarnessOptions, print_harness_result, run_harness, verify_successful_upvote
 
 TASK = """
 Upvote a story on Hacker News.
@@ -23,7 +23,11 @@ def main() -> None:
     print(f"Model: {MODEL}")
     print("Task:  upvote on Hacker News\n")
 
-    result = run_harness(TASK, MODEL)
+    result = run_harness(
+        TASK,
+        MODEL,
+        HarnessOptions(verify=verify_successful_upvote, max_attempts=3),
+    )
     print_harness_result(result)
 
 
