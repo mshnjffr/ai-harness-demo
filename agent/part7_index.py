@@ -1,4 +1,4 @@
-"""Entry point (branch 3): hand the harness a verify step and an attempt budget.
+"""Entry point (`verify-and-retry` branch): hand the harness a verify step and an attempt budget.
 
     python -m agent.part7_index
 
